@@ -63,7 +63,14 @@ var myStream = {};
 
   // start user
   socket.on('startUser', function (userID) {
-    openActiveUsers();
+    console.log('start user run only once');
+    navigator.mediaDevices.getUserMedia(constraints)
+    .then(gotMedia).catch(() => {})
+      
+    function gotMedia (stream) {
+      myStream = stream;
+      openActiveUsers();
+    }
   })
 
 
@@ -76,7 +83,7 @@ var myStream = {};
 
 //open all active users
   socket.on('allUsers', function (userList) {
-    console.log('all users');
+    console.log('all users',userList);
     userServerData = userList;
   });
 
@@ -84,7 +91,14 @@ var myStream = {};
 
   // new user joined
   socket.on('newUser', function (userData) {
-        createNewVideo(userData);
+    navigator.mediaDevices.getUserMedia(constraints)
+    .then(gotMedia).catch(() => {})
+      
+    function gotMedia (stream) {
+      myStream = stream;
+      console.log('called new user');
+       // createNewVideo(userData);
+    }
   });
 
 
@@ -188,10 +202,18 @@ var myStream = {};
       //create stream and video
       peerList[otherID].on('stream', stream => {
         console.log('got stream');
+
+        //delete if exist
+        if(document.getElementById('video-'+ otherID)){
+         // document.getElementById('video-'+ otherID).remove();
+        };
+
+        //create
         var video = document.createElement('video');
         document.getElementById('video-block').appendChild(video);
         video.id = 'video-'+ otherID;
 
+        //setup stream
         if ('srcObject' in video) {
           video.srcObject = stream
         } else {
@@ -200,6 +222,8 @@ var myStream = {};
 
         video.play()
       });
+  }
+
 
 
 
@@ -207,15 +231,13 @@ function openActiveUsers(){
     // create other videos
     userServerData.online.forEach( otherID => {
     if(otherID !== myUserID){
-      
+
+      console.log('called open active user loop');
       createNewVideo(otherID);
 
     }
   })
 }
-
-
-  }
 
     </script> 
   </body>

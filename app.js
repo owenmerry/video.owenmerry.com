@@ -11,10 +11,11 @@ var fs = require('fs');
  
 // create an instance of an express app
 const app = express();
-const server = require('https').createServer({
-  key: fs.readFileSync('key.pem'),
-  cert: fs.readFileSync('cert.pem')
-}, app);
+const server = require('http').createServer(app);
+// const server = require('https').createServer({
+//   key: fs.readFileSync('key.pem'),
+//   cert: fs.readFileSync('cert.pem')
+// }, app);
 const io = require('socket.io').listen(server);
  
 
@@ -46,7 +47,7 @@ io.on('connection', function (socket) {
 
   users.online.push(socket.id);
   io.emit('allUsers', users);
-  io.emit('startUser', users);
+  socket.emit('startUser', users);
   socket.broadcast.emit('newUser', socket.id);
  
   // when a player disconnects, remove them from our user object
@@ -56,7 +57,7 @@ io.on('connection', function (socket) {
       users.online.splice(index, 1);
     }
     io.emit('allUsers', users);
-    socket.broadcast.emit('removeUser', socket.id);
+    io.emit('removeUser', socket.id);
   });
 
 
