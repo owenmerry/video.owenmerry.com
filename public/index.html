@@ -1,0 +1,222 @@
+<html>
+  <body>
+    <style>
+      #outgoing {
+        width: 600px;
+        word-wrap: break-word;
+        white-space: normal;
+      }
+      #video-block{
+      }
+      #video-block video {
+        width: 200px;
+        height: 200px;
+
+      }
+    </style> 
+    <div id='user-block'></div>
+    <div id='video-block'></div>
+    <pre id="outgoing"></pre>
+    <script src="./assets/frameworks/simplepeer.min.js"></script> 
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+
+
+
+//var Peer = require('simple-peer')
+var socket = io(); 
+var conversationInfo = {};
+var myUserID = '';
+var userServerData = [];
+var constraints = {
+    video: {
+      width: {max: 320},
+      height: {max: 3200},
+      frameRate: {max: 30},
+    },
+    audio: true,
+  };
+var peerList = {};
+var conversationList = [];
+var myStream = {};
+
+
+
+  // on connected
+  socket.on('connected', function (userID,userList) {
+    myUserID = userID;
+    console.log('connected');
+
+    navigator.mediaDevices.getUserMedia(constraints)
+    .then(gotMedia).catch(() => {})
+      
+    function gotMedia (stream) {
+      myStream = stream;
+
+      //create my video
+      createMyVideo();
+      
+    }
+
+  })
+
+
+  // start user
+  socket.on('startUser', function (userID) {
+    openActiveUsers();
+  })
+
+
+  // disconnected
+  socket.on('removeUser', function (userID) {
+    document.getElementById('video-'+ userID).remove();
+  })
+
+
+
+//open all active users
+  socket.on('allUsers', function (userList) {
+    console.log('all users');
+    userServerData = userList;
+  });
+
+
+
+  // new user joined
+  socket.on('newUser', function (userData) {
+        createNewVideo(userData);
+  });
+
+
+
+// recieve offer
+
+  socket.on('reciveOffer', function (offerData) {
+    console.log('recieve offer');
+
+    navigator.mediaDevices.getUserMedia(constraints)
+    .then(gotMedia).catch(() => {})
+      
+    function gotMedia (stream) {
+      console.log('recieve offer got media');
+
+      // get answer
+      var peer = new SimplePeer({ 
+      initiator: false, 
+      trickle: false,
+      stream: stream 
+      });
+
+      //send offer
+      peer.on('signal', data => {
+        console.log('send answer');
+        socket.emit('sendAnswer', {to:offerData.from,from:myUserID,answer: JSON.stringify(data)});
+      })
+
+      //create stream and video
+      peer.on('stream', stream => {
+        console.log('got stream');
+        var video = document.createElement('video');
+        document.getElementById('video-block').appendChild(video);
+        video.id = 'video-'+ offerData.from;
+      
+        if ('srcObject' in video) {
+          video.srcObject = stream
+        } else {
+          video.src = window.URL.createObjectURL(stream) // for older browsers
+        }
+      
+        video.play()
+      });
+
+
+      // use offer
+      peer.signal(JSON.parse(offerData.offer));
+
+    };
+
+  });
+
+
+  //create local video
+  function createMyVideo() {
+    var video = document.createElement('video');
+    document.getElementById('video-block').appendChild(video);
+    video.id = 'video-myvideo';
+    video.muted = true;
+  
+    if ('srcObject' in video) {
+      video.srcObject = myStream
+    } else {
+      video.src = window.URL.createObjectURL(myStream) // for older browsers
+    }
+  
+    video.play()
+  }
+
+
+  // recieve answer
+  socket.on('reciveAnswer', function (answerData) {
+    console.log('recieve answer');
+    peerList[answerData.to].signal(JSON.parse(answerData.answer));
+  });
+
+
+  // creste new user video
+  function createNewVideo (ref) {
+
+    var otherID = ref;
+
+    console.log('called init for ', otherID);
+          
+      // get offer
+      peerList[otherID] = new SimplePeer({ 
+      initiator: true, 
+      trickle: false,
+      stream: myStream 
+      });
+
+      //send offer
+      peerList[otherID].on('signal', data => {
+        if(conversationList.indexOf(otherID) === -1){
+          console.log('send offer');
+          socket.emit('sendOffer', {to:otherID,from:myUserID,offer: JSON.stringify(data)});
+          conversationList.push(otherID);
+        }
+      });
+
+      //create stream and video
+      peerList[otherID].on('stream', stream => {
+        console.log('got stream');
+        var video = document.createElement('video');
+        document.getElementById('video-block').appendChild(video);
+        video.id = 'video-'+ otherID;
+
+        if ('srcObject' in video) {
+          video.srcObject = stream
+        } else {
+          video.src = window.URL.createObjectURL(stream) // for older browsers
+        }
+
+        video.play()
+      });
+
+
+
+function openActiveUsers(){
+    // create other videos
+    userServerData.online.forEach( otherID => {
+    if(otherID !== myUserID){
+      
+      createNewVideo(otherID);
+
+    }
+  })
+}
+
+
+  }
+
+    </script> 
+  </body>
+</html>
