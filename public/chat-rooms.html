@@ -14,9 +14,16 @@
 
       }
     </style> 
+    <h2>Functions</h2>
+    <div id='leave-chat'>Leave Chat</div>
+    <h2>My Details</h2>
+    <div id='my-user-block'></div>
+    <h2>Users</h2>
     <div id='user-block'></div>
+    <h2>My Video</h2>
+    <div id='my-video-block'></div>
+    <h2>Videos</h2>
     <div id='video-block'></div>
-    <pre id="outgoing"></pre>
     <script src="./assets/frameworks/simplepeer.min.js"></script> 
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -34,11 +41,12 @@ var constraints = {
       height: {max: 3200},
       frameRate: {max: 30},
     },
-    audio: false,
+    audio: true,
   };
 var peerList = {};
 var conversationList = [];
 var myStream = {};
+var showingMyVideo = false;
 
 
 
@@ -52,10 +60,6 @@ var myStream = {};
       
     function gotMedia (stream) {
       myStream = stream;
-
-      //create my video
-      createMyVideo();
-      
     }
 
   })
@@ -64,41 +68,29 @@ var myStream = {};
   // start user
   socket.on('startUser', function (userID) {
     console.log('start user run only once');
-    navigator.mediaDevices.getUserMedia(constraints)
-    .then(gotMedia).catch(() => {})
-      
-    function gotMedia (stream) {
-      myStream = stream;
-      openActiveUsers();
-    }
   })
 
 
   // disconnected
   socket.on('removeUser', function (userID) {
-    document.getElementById('video-'+ userID).remove();
+    if(document.getElementById('video-'+ userID)){
+      document.getElementById('video-'+ userID).remove();
+    }
   })
 
 
 
-//open all active users
+//users change
   socket.on('allUsers', function (userList) {
     console.log('all users',userList);
     userServerData = userList;
+    showUsers();
   });
 
 
 
   // new user joined
   socket.on('newUser', function (userData) {
-    navigator.mediaDevices.getUserMedia(constraints)
-    .then(gotMedia).catch(() => {})
-      
-    function gotMedia (stream) {
-      myStream = stream;
-      console.log('called new user');
-       //createNewVideo(userData);
-    }
   });
 
 
@@ -113,6 +105,11 @@ var myStream = {};
       
     function gotMedia (stream) {
       console.log('recieve offer got media');
+
+      //check my video
+      if(!showingMyVideo){
+        createMyVideo();
+      }
 
       // get answer
       var peer = new SimplePeer({ 
@@ -154,10 +151,12 @@ var myStream = {};
 
   //create local video
   function createMyVideo() {
+    document.getElementById('my-video-block').innerHTML = '';
     var video = document.createElement('video');
-    document.getElementById('video-block').appendChild(video);
+    document.getElementById('my-video-block').appendChild(video);
     video.id = 'video-myvideo';
     video.muted = true;
+    showingMyVideo = true;
   
     if ('srcObject' in video) {
       video.srcObject = myStream
@@ -238,6 +237,131 @@ function openActiveUsers(){
     }
   })
 }
+
+function openUsersFromList(userList){
+    // create other videos
+    userList.forEach( otherID => {
+    if(otherID !== myUserID){
+
+      console.log('called open active user loop');
+      createNewVideo(otherID);
+
+    }
+  })
+}
+
+
+//room functions
+function makeRoomWithUser(addUser){
+  socket.emit('createOrJoinRoom', {addUser: addUser});
+}
+
+socket.on('joinRoom', function (roomData) {
+  console.log('joinRoom');
+  console.log(roomData);
+  joinRoom(roomData);
+});
+
+function joinRoom(joinRoom) {
+
+    //create my video
+    createMyVideo();
+
+    //create others videos
+    openUsersFromList(joinRoom.users);
+
+
+}
+
+function callLeaveRoom() {
+  socket.emit('leaveRoom', {});
+}
+
+function cleanScreen() {
+  document.getElementById('my-video-block').innerHTML = '';
+  document.getElementById('video-block').innerHTML = '';
+  showingMyVideo = false;
+}
+
+
+// show all online users
+function showUsers(){
+
+  //show users
+  document.getElementById('user-block').innerHTML = '';
+  userServerData.online.forEach( userID => {
+    if(userID !== myUserID){
+      var user = document.createElement('div');
+        document.getElementById('user-block').appendChild(user);
+        user.classList.add('create-room-with');
+        if(userID !== myUserID){
+        user.innerHTML = 'user---'+ userID +'---'+ userServerData[userID].room;
+        } else {
+          user.innerHTML = 'user---'+ userID +'---'+ userServerData[userID].room +'---(me)';
+        }
+    }
+  })
+
+  // create button click
+  var elements = document.getElementsByClassName('create-room-with');
+  for (var i = 0; i < elements.length; i++) {
+  elements[i].addEventListener('click', (e) => {
+    console.log('clicked user');
+    createRoom(e.target.innerHTML.split('---')[1]);
+  });
+  }
+
+  //show my details
+  document.getElementById('my-user-block').innerHTML = '';
+  document.getElementById('my-user-block').innerHTML = 'Your User ID: '+ myUserID +', Room Your In: '+ userServerData[myUserID].room +'';
+
+}
+
+
+// show all rooms
+// function showRooms(){
+//   document.getElementById('user-block').innerHTML = '';
+//   roomServerData.online.forEach( userID => {
+//       var user = document.createElement('div');
+//         document.getElementById('user-block').appendChild(user);
+//         if(userID !== myUserID){
+//         user.innerHTML = 'user-'+ userID;
+//         } else {
+//           user.innerHTML = 'user-'+ userID +'-(me)';
+//         }
+//   })
+
+// }
+
+
+
+//=================================================================
+//Clean API calls
+
+// show all online users
+function createRoom(user){
+      
+      //create my video
+      makeRoomWithUser(user);
+    
+}
+
+// show all online users
+function leaveRoom(){
+      
+      callLeaveRoom();
+
+      cleanScreen();
+    
+}
+
+
+
+//listeners
+document.getElementById('leave-chat').addEventListener('click', function(){
+  console.log('run leave room');
+  leaveRoom();
+});
 
     </script> 
   </body>
