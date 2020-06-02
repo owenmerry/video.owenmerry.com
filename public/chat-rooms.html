@@ -51,6 +51,7 @@ var peerList = {};
 var conversationList = [];
 var myStream = {};
 var showingMyVideo = false;
+var roomInData = {};
 
 
 
@@ -79,6 +80,9 @@ var showingMyVideo = false;
   socket.on('removeUser', function (userID) {
     if(document.getElementById('video-'+ userID)){
       document.getElementById('video-'+ userID).remove();
+    }
+    if(peerList[userID]){
+      peerList[userID].destroy();
     }
   })
 
@@ -116,20 +120,20 @@ var showingMyVideo = false;
       }
 
       // get answer
-      var peer = new SimplePeer({ 
+      peerList[offerData.from] = new SimplePeer({ 
       initiator: false, 
       trickle: false,
       stream: stream 
       });
 
       //send offer
-      peer.on('signal', data => {
+      peerList[offerData.from].on('signal', data => {
         console.log('send answer');
         socket.emit('sendAnswer', {to:offerData.from,from:myUserID,answer: JSON.stringify(data)});
       })
 
       //create stream and video
-      peer.on('stream', stream => {
+      peerList[offerData.from].on('stream', stream => {
         console.log('got stream');
         var video = document.createElement('video');
         document.getElementById('video-block').appendChild(video);
@@ -146,7 +150,15 @@ var showingMyVideo = false;
 
 
       // use offer
-      peer.signal(JSON.parse(offerData.offer));
+      peerList[offerData.from].signal(JSON.parse(offerData.offer));
+
+      //destroy
+      peerList[offerData.from].on('destroy', data => {
+        console.log('run destroy recieve offer');
+        if(peerList[offerData.from]){
+          delete peerList[offerData.from];
+        }
+      })
 
     };
 
@@ -199,6 +211,14 @@ var showingMyVideo = false;
           console.log('send offer');
           socket.emit('sendOffer', {to:otherID,from:myUserID,offer: JSON.stringify(data)});
           conversationList.push(otherID);
+        }
+      });
+
+      //destory
+      peerList[otherID].on('destroy', data => {
+        console.log('run destroy recieve answer');
+        if(peerList[otherID]){
+          delete peerList[otherID];
         }
       });
 
@@ -263,6 +283,7 @@ function makeRoomWithUser(addUser){
 socket.on('joinRoom', function (roomData) {
   console.log('joinRoom');
   console.log(roomData);
+  roomInData = roomData;
   joinRoom(roomData);
 });
 
@@ -285,6 +306,18 @@ function cleanScreen() {
   document.getElementById('my-video-block').innerHTML = '';
   document.getElementById('video-block').innerHTML = '';
   showingMyVideo = false;
+
+  if(roomInData.users){
+    roomInData.users.forEach( function (user) {
+      var removeUserIndex = conversationList.indexOf(user);
+      if(removeUserIndex > -1){
+        conversationList.splice(removeUserIndex, 1);
+      }
+      if(peerList[user]){
+        peerList[user].destroy();
+      }
+    });
+  }
 }
 
 
@@ -344,6 +377,8 @@ function showUsers(){
 
 // show all online users
 function createRoom(user){
+
+      leaveRoom();
       
       //create my video
       makeRoomWithUser(user);
