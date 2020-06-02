@@ -11,18 +11,22 @@
       #video-block video {
         width: 200px;
         height: 200px;
+      }
+      #my-video-block video {
+        width: 200px;
+        height: 200px;
 
       }
     </style> 
     <h2>Functions</h2>
     <div id='leave-chat'>Leave Chat</div>
-    <h2>My Details</h2>
+    <h2>My User Details</h2>
     <div id='my-user-block'></div>
-    <h2>Users</h2>
+    <h2>Users Online</h2>
     <div id='user-block'></div>
     <h2>My Video</h2>
     <div id='my-video-block'></div>
-    <h2>Videos</h2>
+    <h2>Others Videos</h2>
     <div id='video-block'></div>
     <script src="./assets/frameworks/simplepeer.min.js"></script> 
     <script src="/socket.io/socket.io.js"></script>
@@ -295,7 +299,7 @@ function showUsers(){
         document.getElementById('user-block').appendChild(user);
         user.classList.add('create-room-with');
         if(userID !== myUserID){
-        user.innerHTML = 'user---'+ userID +'---'+ userServerData[userID].room;
+        user.innerHTML = 'user---'+ userID +'---In room:'+ userServerData[userID].room;
         } else {
           user.innerHTML = 'user---'+ userID +'---'+ userServerData[userID].room +'---(me)';
         }
