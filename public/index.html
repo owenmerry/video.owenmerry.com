@@ -21,7 +21,6 @@
         z-index: 1;
       }
       .videos {
-        width: 100vw;
         position: absolute;
         top: 0;
         left: 0;
@@ -40,17 +39,17 @@
       }
     </style>
     <div class="videos">
-      <div class="address-bar">
-        <input
-          type="text"
-          class="address-bar-input"
-          value="https://owenmerry.com"
-          placeholder="type a URL eg.https://owenmerry.com"
-          onchange="javascript:changeSite(this.value)"
-        />
-      </div>
       <div id="user-block"></div>
       <div id="video-block"></div>
+    </div>
+    <div class="address-bar">
+      <input
+        type="text"
+        class="address-bar-input"
+        value="https://owenmerry.com"
+        placeholder="type a URL eg.https://owenmerry.com"
+        onchange="javascript:changeSite(this.value)"
+      />
     </div>
     <pre id="outgoing"></pre>
     <div>
