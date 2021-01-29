@@ -12,61 +12,12 @@
         width: 200px;
         height: 200px;
       }
-      .iframe-site {
-        width: calc(100vw - 20px);
-        height: 100vh;
-        position: fixed;
-        top: 0;
-        left: 0;
-        z-index: 1;
-      }
-      .videos {
-        width: 100vw;
-        position: absolute;
-        top: 0;
-        left: 0;
-        z-index: 10;
-      }
-      .address-bar {
-        width: 100vw;
-        position: absolute;
-        top: 0;
-        left: 0;
-        z-index: 10;
-      }
-      .address-bar-input {
-        width: 100vw;
-        padding: 10px;
-      }
     </style>
-    <div class="videos">
-      <div class="address-bar">
-        <input
-          type="text"
-          class="address-bar-input"
-          value="http://owenmerry.com"
-          placeholder="type a URL eg.http://owenmerry.com"
-          onchange="javascript:changeSite(this.value)"
-        />
-      </div>
-      <div id="user-block"></div>
-      <div id="video-block"></div>
-    </div>
+    <div id="user-block"></div>
+    <div id="video-block"></div>
     <pre id="outgoing"></pre>
-    <div>
-      <iframe
-        frameborder="0"
-        src="http://owenmerry.com"
-        class="iframe-site"
-      ></iframe>
-    </div>
     <script src="./assets/frameworks/simplepeer.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script
-      src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
-      integrity="sha256-4+XzXVhsDmqanXGHaHvgh1gMQKX40OUvDEBTu8JcmNs="
-      crossorigin="anonymous"
-    ></script>
     <script>
       //var Peer = require('simple-peer')
       var socket = io();
@@ -275,23 +226,6 @@
           }
         });
       }
-
-      //iframe functions
-      function changeSite(site) {
-        document.getElementsByClassName("iframe-site")[0].src = site;
-      }
-
-      $(function () {
-        $("a.removeBlank").on("click", function () {
-          if ($(this).attr("target") == "_blank") {
-            $(this).attr("target", "_self");
-          }
-
-          $(this).click();
-
-          return false;
-        });
-      });
     </script>
   </body>
 </html>
